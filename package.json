@@ -1,0 +1,23 @@
+{
+  "name": "phone-preorder-platform",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "backend",
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "install:all": "npm install",
+    "dev:backend": "npm --prefix backend run dev",
+    "start:backend": "npm --prefix backend start",
+    "dev:client": "npm --prefix client run dev",
+    "build:client": "npm --prefix client run build",
+    "dev": "npm --prefix backend run dev"
+  },
+  "dependencies": {
+    "canvas-confetti": "^1.9.4",
+    "matter-js": "^0.20.0"
+  }
+}
