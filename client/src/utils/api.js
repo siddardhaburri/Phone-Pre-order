@@ -1,4 +1,6 @@
-const API_BASE = '/api';
+import { getApiUrl } from './apiConfig.js';
+
+const API_BASE = getApiUrl('/api');
 
 export async function fetchPhones(brand = 'all', search = '') {
   try {

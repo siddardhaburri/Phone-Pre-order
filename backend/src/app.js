@@ -15,6 +15,9 @@ import { errorHandler } from './middleware/errorHandler.js';
 
 const app = express();
 
+// Trust reverse proxy headers (required on Render, Vercel, Heroku for correct client IP detection)
+app.set('trust proxy', 1);
+
 /**
  * Configure Allowed Origins for CORS
  * Reads from process.env.CLIENT_ORIGIN and includes required frontend origins.
@@ -25,7 +28,7 @@ const parseOrigins = () => {
     .map(o => o.trim().replace(/\/$/, ''))
     .filter(Boolean);
 
-  const defaultOrigins = [
+  const localDevOrigins = [
     'http://localhost:5174',
     'http://127.0.0.1:5174',
     'http://localhost:5173',
@@ -33,7 +36,12 @@ const parseOrigins = () => {
     'http://localhost:3000'
   ];
 
-  return Array.from(new Set([...envOrigins, ...defaultOrigins]));
+  // In production, strictly enforce CLIENT_ORIGIN if provided, otherwise allow local fallback
+  if (process.env.NODE_ENV === 'production' && envOrigins.length > 0) {
+    return Array.from(new Set(envOrigins));
+  }
+
+  return Array.from(new Set([...envOrigins, ...localDevOrigins]));
 };
 
 const allowedOrigins = parseOrigins();

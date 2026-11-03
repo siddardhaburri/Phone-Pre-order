@@ -18,6 +18,7 @@ import {
 import { SMARTPHONES } from '../data/smartphones';
 import HeaderNav from '../components/HeaderNav';
 import TechSpecsAccordion from '../components/TechSpecsAccordion';
+import { getApiUrl } from '../utils/apiConfig';
 
 export default function DeviceDetailsPage() {
   const { id } = useParams();
@@ -157,7 +158,7 @@ export default function DeviceDetailsPage() {
         devicePrice: phone.price
       };
 
-      const response = await fetch('/api/preorders', {
+      const response = await fetch(getApiUrl('/api/preorders'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

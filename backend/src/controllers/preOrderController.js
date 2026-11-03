@@ -169,8 +169,31 @@ export const createPreOrder = async (req, res, next) => {
 };
 
 /**
- * Controller: Get Pre-Order Details by Booking ID
+ * Masks phone numbers for public lookup security (e.g. 98******10)
+ */
+const maskPhoneNumber = (phone) => {
+  if (!phone || typeof phone !== 'string') return '';
+  const digits = phone.replace(/\D/g, '');
+  if (digits.length <= 4) return '******';
+  return `${digits.slice(0, 2)}******${digits.slice(-2)}`;
+};
+
+/**
+ * Masks email addresses for public lookup security (e.g. r***l@example.com)
+ */
+const maskEmailAddress = (email) => {
+  if (!email || typeof email !== 'string' || !email.includes('@')) return '';
+  const [localPart, domain] = email.split('@');
+  if (localPart.length <= 2) {
+    return `${localPart[0]}***@${domain}`;
+  }
+  return `${localPart[0]}***${localPart[localPart.length - 1]}@${domain}`;
+};
+
+/**
+ * Controller: Get Pre-Order Details by Booking ID (Public status verification)
  * GET /api/preorders/:bookingId
+ * Protects customer privacy by masking phone number and email address.
  */
 export const getPreOrderById = async (req, res, next) => {
   try {
@@ -196,7 +219,17 @@ export const getPreOrderById = async (req, res, next) => {
 
     return res.status(200).json({
       success: true,
-      preOrder
+      preOrder: {
+        bookingId: preOrder.bookingId,
+        fullName: preOrder.fullName,
+        phoneNumber: maskPhoneNumber(preOrder.phoneNumber),
+        email: maskEmailAddress(preOrder.email),
+        deviceName: preOrder.deviceName,
+        devicePrice: preOrder.devicePrice,
+        depositAmount: preOrder.depositAmount,
+        orderStatus: preOrder.orderStatus,
+        createdAt: preOrder.createdAt
+      }
     });
   } catch (error) {
     return next(error);

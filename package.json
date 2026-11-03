@@ -5,8 +5,7 @@
   "type": "module",
   "workspaces": [
     "backend",
-    "client",
-    "server"
+    "client"
   ],
   "scripts": {
     "install:all": "npm install",
