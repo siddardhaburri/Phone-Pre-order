@@ -25,7 +25,9 @@ export const getHealth = (req, res) => {
     database: {
       status: dbStatus.status,
       connected: dbStatus.connected,
-      host: dbStatus.host
+      host: dbStatus.host,
+      name: dbStatus.name,
+      ...(dbStatus.lastError ? { lastError: dbStatus.lastError } : {})
     },
     timestamp: new Date().toISOString()
   };

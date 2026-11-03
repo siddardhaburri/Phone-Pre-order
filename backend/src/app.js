@@ -33,7 +33,9 @@ const parseOrigins = () => {
     'http://127.0.0.1:5174',
     'http://localhost:5173',
     'http://127.0.0.1:5173',
-    'http://localhost:3000'
+    'http://localhost:3000',
+    'http://192.168.1.2:5173',
+    'http://192.168.1.2:5174'
   ];
 
   // In production, strictly enforce CLIENT_ORIGIN if provided, otherwise allow local fallback
@@ -56,6 +58,11 @@ const corsOptions = {
     const normalizedOrigin = origin.trim().replace(/\/$/, '');
 
     if (allowedOrigins.includes(normalizedOrigin)) {
+      return callback(null, true);
+    }
+
+    // In development mode, allow connections from local network devices (e.g. mobile phones on Wi-Fi)
+    if (process.env.NODE_ENV !== 'production' && /^http:\/\/(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+)(:\d+)?$/.test(normalizedOrigin)) {
       return callback(null, true);
     }
 
