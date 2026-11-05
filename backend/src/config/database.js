@@ -64,6 +64,7 @@ class Database {
   constructor() {
     this.isConnected = false;
     this.lastError = null;
+    this.retryTimer = null;
   }
 
   /**
@@ -153,6 +154,10 @@ class Database {
 
       this.isConnected = true;
       this.lastError = null;
+      if (this.retryTimer) {
+        clearInterval(this.retryTimer);
+        this.retryTimer = null;
+      }
       console.log(`[Database] MongoDB Atlas Connected: ${conn.connection.host} (Database: ${conn.connection.name})`);
       return true;
     } catch (error) {
@@ -166,12 +171,22 @@ class Database {
         console.error('========================================================================');
         console.error('🚨 [Database Diagnostic] TLS Alert 80 Handshake Failure:');
         console.error('   Atlas rejected the TLS connection because the client IP is blocked.');
-        console.error('   Ensure Render outbound IPs (74.220.48.0/24 & 74.220.56.0/24) are');
-        console.error('   added as separate entries, or allow 0.0.0.0/0 in Atlas Network Access.');
+        console.error('   Ensure your current IP or 0.0.0.0/0 is added to Atlas Network Access.');
         console.error('========================================================================');
       }
 
       console.warn('[Database] Server will continue operating safely without database connectivity.');
+
+      // Auto-retry connection every 15 seconds until Atlas whitelist is active
+      if (!this.retryTimer) {
+        this.retryTimer = setInterval(async () => {
+          if (!this.isConnected && mongoose.connection.readyState === 0) {
+            console.log('[Database] Attempting auto-reconnect to MongoDB Atlas...');
+            await this.connect();
+          }
+        }, 15000);
+      }
+
       return false;
     }
   }
@@ -206,6 +221,10 @@ class Database {
    * Disconnect from database gracefully
    */
   async disconnect() {
+    if (this.retryTimer) {
+      clearInterval(this.retryTimer);
+      this.retryTimer = null;
+    }
     if (this.isConnected) {
       await mongoose.disconnect();
       this.isConnected = false;

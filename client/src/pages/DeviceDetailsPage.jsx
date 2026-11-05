@@ -154,24 +154,52 @@ export default function DeviceDetailsPage() {
         fullName: formData.fullName.trim(),
         phoneNumber: cleanedPhone,
         email: formData.email.trim().toLowerCase(),
-        deviceName: phone.name,
-        devicePrice: phone.price
+        deviceName: (phone.name || '').trim(),
+        devicePrice: typeof phone.price === 'number' ? phone.price : Number(phone.price)
       };
 
-      const response = await fetch(getApiUrl('/api/preorders'), {
+      const targetUrl = getApiUrl('/api/preorders');
+
+      const response = await fetch(targetUrl, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
         body: JSON.stringify(payload)
       });
 
-      const data = await response.json();
+      // Safely parse JSON or handle non-JSON responses (e.g. 502/504 HTML error pages)
+      let data = null;
+      const contentType = response.headers.get('content-type') || '';
 
-      if (!response.ok || !data.success) {
-        throw new Error(
-          data.error?.message || 'Failed to register your pre-order. Please check your details and try again.'
-        );
+      if (contentType.includes('application/json')) {
+        try {
+          data = await response.json();
+        } catch (jsonErr) {
+          console.warn('[PreOrder] Could not parse JSON response:', jsonErr);
+        }
+      } else {
+        const rawText = await response.text();
+        console.warn('[PreOrder] Non-JSON response received:', rawText.slice(0, 300));
+      }
+
+      if (!response.ok || !data?.success) {
+        let errorMessage = 'Failed to register your pre-order. Please check your details and try again.';
+
+        if (data?.error?.message) {
+          errorMessage = data.error.message;
+        } else if (response.status === 429) {
+          errorMessage = 'Too many requests. Please wait a few minutes before submitting another pre-order.';
+        } else if (response.status === 502 || response.status === 504) {
+          errorMessage = 'The backend service is currently starting up on Render. Please wait 30 seconds and try again.';
+        } else if (response.status === 503) {
+          errorMessage = data?.error?.message || 'The database is currently connecting. Please try again shortly.';
+        } else if (response.status === 404) {
+          errorMessage = 'The pre-order registration endpoint was not found on the server. Please verify your API URL.';
+        }
+
+        throw new Error(errorMessage);
       }
 
       // Display success only after MongoDB confirms the record was saved

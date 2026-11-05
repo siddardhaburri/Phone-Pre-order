@@ -28,6 +28,10 @@ const parseOrigins = () => {
     .map(o => o.trim().replace(/\/$/, ''))
     .filter(Boolean);
 
+  const defaultProductionOrigins = [
+    'https://phone-pre-order.vercel.app'
+  ];
+
   const localDevOrigins = [
     'http://localhost:5174',
     'http://127.0.0.1:5174',
@@ -38,12 +42,12 @@ const parseOrigins = () => {
     'http://192.168.1.2:5174'
   ];
 
-  // In production, strictly enforce CLIENT_ORIGIN if provided, otherwise allow local fallback
-  if (process.env.NODE_ENV === 'production' && envOrigins.length > 0) {
-    return Array.from(new Set(envOrigins));
+  // In production, enforce CLIENT_ORIGIN alongside known production Vercel frontend
+  if (process.env.NODE_ENV === 'production') {
+    return Array.from(new Set([...envOrigins, ...defaultProductionOrigins]));
   }
 
-  return Array.from(new Set([...envOrigins, ...localDevOrigins]));
+  return Array.from(new Set([...envOrigins, ...defaultProductionOrigins, ...localDevOrigins]));
 };
 
 const allowedOrigins = parseOrigins();
@@ -58,6 +62,11 @@ const corsOptions = {
     const normalizedOrigin = origin.trim().replace(/\/$/, '');
 
     if (allowedOrigins.includes(normalizedOrigin)) {
+      return callback(null, true);
+    }
+
+    // Allow Vercel preview deployments for the project
+    if (/^https:\/\/phone-pre-order(-[a-z0-9-]+)?\.vercel\.app$/.test(normalizedOrigin)) {
       return callback(null, true);
     }
 
